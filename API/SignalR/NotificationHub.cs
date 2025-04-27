@@ -28,7 +28,7 @@ public class NotificationHub : Hub
         return base.OnDisconnectedAsync(exception);
     }
 
-    public static string? GetconnectionIdByEmail(string email) 
+    public static string? GetConnectionIdByEmail(string email) 
     {
         UserConnections.TryGetValue(email, out var connectionid);
 

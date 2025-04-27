@@ -134,7 +134,7 @@ export class StripeService {
     )
   }
 
-  disposeElements() {
+  disposeElements() {  
     this.elements = undefined;
     this.addressElement = undefined;
     this.paymentElement = undefined;

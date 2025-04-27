@@ -80,12 +80,12 @@ public class PaymentsController(IPaymentService paymentService,
             {
                 order.Status = OrderStatus.PaymentMismatch;
             } else {
-                order.Status = OrderStatus.PaymentRecieved;
+                order.Status = OrderStatus.PaymentReceived;
             }
 
             await unit.Complete();
 
-            var connectionid = NotificationHub.GetconnectionIdByEmail(order.BuyerEmail);
+            var connectionid = NotificationHub.GetConnectionIdByEmail(order.BuyerEmail);
 
             if (!string.IsNullOrEmpty(connectionid))
             {
