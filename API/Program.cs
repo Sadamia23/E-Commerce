@@ -94,10 +94,15 @@ try
     var context = services.GetRequiredService<StoreContext>();
     var userManager = services.GetRequiredService<UserManager<AppUser>>();
     var logger = services.GetRequiredService<ILogger<Program>>();
-    
+
     logger.LogInformation("Attempting database migration");
     await context.Database.MigrateAsync();
     logger.LogInformation("Database migration completed");
+    
+    // Add enum fix here
+    logger.LogInformation("Fixing PaymentReceived enum values");
+    await context.Database.ExecuteSqlRawAsync("UPDATE Orders SET Status = 'PaymentReceived' WHERE Status = 'PaymentRecieved'");
+    logger.LogInformation("Enum values fixed");
     
     logger.LogInformation("Attempting to seed data");
     await StoreContextSeed.SeedAsync(context, userManager);
