@@ -7,7 +7,7 @@ This app is built using .Net 9 and Angular 19
 To run this project locally you will need to have installed:
 
 1. Docker
-2. .Net SDK v8
+2. .Net SDK v9
 3. NodeJS (at least version 20.11.1) - Optional if you want to run the Angular app separately in development mode
 4. Clone the project in a User folder on your computer by running:
 
