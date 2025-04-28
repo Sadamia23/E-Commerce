@@ -13,11 +13,6 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers();
-// builder.Services.AddDbContext<StoreContext>(opt =>
-// {
-//     opt.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
-// });
-
 builder.Services.AddDbContext<StoreContext>(opt =>
 {
     opt.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"), 
@@ -72,21 +67,6 @@ app.MapGroup("api").MapIdentityApi<AppUser>(); // api/login
 app.MapHub<NotificationHub>("/hub/notifications");
 app.MapFallbackToController("Index", "Fallback");
 
-// try
-// {
-//     using var scope = app.Services.CreateScope();
-//     var services = scope.ServiceProvider;
-//     var context = services.GetRequiredService<StoreContext>();
-//     var userManager = services.GetRequiredService<UserManager<AppUser>>();
-//     await context.Database.MigrateAsync();
-//     await StoreContextSeed.SeedAsync(context, userManager);
-// }
-// catch (Exception ex)
-// {
-//     Console.WriteLine(ex);
-//     throw;
-// }
-
 try
 {
     using var scope = app.Services.CreateScope();
@@ -99,11 +79,6 @@ try
     await context.Database.MigrateAsync();
     logger.LogInformation("Database migration completed");
     
-    // Add enum fix here
-    logger.LogInformation("Fixing PaymentReceived enum values");
-    await context.Database.ExecuteSqlRawAsync("UPDATE Orders SET Status = 'PaymentReceived' WHERE Status = 'PaymentRecieved'");
-    logger.LogInformation("Enum values fixed");
-    
     logger.LogInformation("Attempting to seed data");
     await StoreContextSeed.SeedAsync(context, userManager);
     logger.LogInformation("Data seeding completed");
@@ -112,8 +87,6 @@ catch (Exception ex)
 {
     var logger = app.Services.GetRequiredService<ILogger<Program>>();
     logger.LogError(ex, "An error occurred during migration or seeding");
-    // Don't throw here - this will cause the app to fail startup
-    // Instead, log the error and continue
 }
 
 app.Run();

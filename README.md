@@ -1,6 +1,10 @@
 # Skinet Project Repository
 
+Welcome to the my Full-Stack E-commerce project!
+
 This app is built using .Net 9 and Angular 19
+
+You can see a live demo of this project [here](https://ski-shop-saba.azurewebsites.net/).
 
 # Running the project
 
