@@ -13,10 +13,23 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers();
+// builder.Services.AddDbContext<StoreContext>(opt =>
+// {
+//     opt.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+// });
+
 builder.Services.AddDbContext<StoreContext>(opt =>
 {
-    opt.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+    opt.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"), 
+        sqlServerOptionsAction: sqlOptions => 
+        {
+            sqlOptions.EnableRetryOnFailure(
+                maxRetryCount: 5,
+                maxRetryDelay: TimeSpan.FromSeconds(30),
+                errorNumbersToAdd: null);
+        });
 });
+
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -59,19 +72,43 @@ app.MapGroup("api").MapIdentityApi<AppUser>(); // api/login
 app.MapHub<NotificationHub>("/hub/notifications");
 app.MapFallbackToController("Index", "Fallback");
 
+// try
+// {
+//     using var scope = app.Services.CreateScope();
+//     var services = scope.ServiceProvider;
+//     var context = services.GetRequiredService<StoreContext>();
+//     var userManager = services.GetRequiredService<UserManager<AppUser>>();
+//     await context.Database.MigrateAsync();
+//     await StoreContextSeed.SeedAsync(context, userManager);
+// }
+// catch (Exception ex)
+// {
+//     Console.WriteLine(ex);
+//     throw;
+// }
+
 try
 {
     using var scope = app.Services.CreateScope();
     var services = scope.ServiceProvider;
     var context = services.GetRequiredService<StoreContext>();
     var userManager = services.GetRequiredService<UserManager<AppUser>>();
+    var logger = services.GetRequiredService<ILogger<Program>>();
+    
+    logger.LogInformation("Attempting database migration");
     await context.Database.MigrateAsync();
+    logger.LogInformation("Database migration completed");
+    
+    logger.LogInformation("Attempting to seed data");
     await StoreContextSeed.SeedAsync(context, userManager);
+    logger.LogInformation("Data seeding completed");
 }
 catch (Exception ex)
 {
-    Console.WriteLine(ex);
-    throw;
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+    logger.LogError(ex, "An error occurred during migration or seeding");
+    // Don't throw here - this will cause the app to fail startup
+    // Instead, log the error and continue
 }
 
 app.Run();
