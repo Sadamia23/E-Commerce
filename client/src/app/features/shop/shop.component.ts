@@ -77,6 +77,8 @@ export class ShopComponent implements OnInit {
     this.shopParams.pageNumber = event.pageIndex + 1;
     this.shopParams.pageSize = event.pageSize;
     this.getProducts();
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   onSortChange(event: MatSelectionListChange) {
@@ -90,7 +92,7 @@ export class ShopComponent implements OnInit {
 
   openFiltersDialog() {
     const dialogRef = this.dialogService.open(FiltersDialogComponent, {
-      minWidth: '500px',
+      width: '500px',
       data: {
         selectedBrands: this.shopParams.brands,
         selectedTypes: this.shopParams.types,

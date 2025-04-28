@@ -23,10 +23,13 @@ import { AccountService } from '../../core/services/account.service';
 import { CheckoutDeliveryComponent } from './checkout-delivery/checkout-delivery.component';
 import { CheckoutReviewComponent } from './checkout-review/checkout-review.component';
 import { CartService } from '../../core/services/cart.service';
-import { CurrencyPipe } from '@angular/common';
+import { AsyncPipe, CurrencyPipe } from '@angular/common';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { OrderToCreate, ShippingAddress } from '../../shared/models/order';
 import { OrderService } from '../../core/services/order.service';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 @Component({
   selector: 'app-checkout',
@@ -40,6 +43,7 @@ import { OrderService } from '../../core/services/order.service';
     CheckoutReviewComponent,
     CurrencyPipe,
     MatProgressSpinnerModule,
+    AsyncPipe
   ],
   templateUrl: './checkout.component.html',
   styleUrl: './checkout.component.scss',
@@ -49,9 +53,6 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   private accountService = inject(AccountService);
   private router = inject(Router);
   private orderService = inject(OrderService);
-  // TODO!
-  // When I am on https://localhost:4200/checkout and I refresh browser,
-  // snackbar appears with error "Your cart is empty" but i have products in cart.
   private snackbar = inject(SnackbarService);
   cartService = inject(CartService);
   addressElement?: StripeAddressElement;
@@ -64,6 +65,13 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   }>({ address: false, card: false, delivery: false });
   confirmationToken?: ConfirmationToken;
   loading = false;
+  isSmallScreen$: Observable<boolean>;
+
+  constructor(private breakpointObserver: BreakpointObserver) {
+    this.isSmallScreen$ = this.breakpointObserver
+      .observe([Breakpoints.XSmall, Breakpoints.Small])
+      .pipe(map(result => result.matches));
+  }
 
   async ngOnInit() {
     try {

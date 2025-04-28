@@ -4,12 +4,12 @@
       <img
         src="{{ item().pictureUrl }}"
         alt="product image"
-        class="h-20 w-20"
+        class="h-20 w-20 minw20"
       />
     </a>
 
-    <div class="flex items-center justify-between order-3">
-      <div class="flex items-center align-middle gap-3">
+    <div class="md:flex items-center justify-between order-3">
+      <div class="flex justify-end md:items-center align-middle md:gap-3">
         <button mat-icon-button (click)="decrementQuantity()">
           <mat-icon class="text-red-600">remove</mat-icon>
         </button>
@@ -21,19 +21,21 @@
         </button>
       </div>
 
-      <div class="text-end order-4 w-32">
-        <p class="font-bold text-xl">{{ item().price | currency }}</p>
+      <div class="text-end order-4 sm:w-32">
+        <p class="font-bold text-base sm:text-xl">{{ item().price | currency }}</p>
       </div>
     </div>
 
     <div class="w-full flex-1 space-y-4 order-2 max-w-md">
-      <a routerLink="/shop/{{ item().productId }}" class="font-medium">{{
+      <a routerLink="/shop/{{ item().productId }}" class="font-medium sm:text-lg" style="font-size: 10px; line-height: 3px !important;">{{
         item().productName
       }}</a>
       <div class="flex items-center gap-4">
-        <button mat-button class="text-red-700 hover:text-red-500 cursor-pointer" (click)="removeItemFromcart()">
+        <button mat-button class="delete-item" (click)="removeItemFromcart()">
           <mat-icon>delete</mat-icon>
-          Delete
+          <span class="hidden sm:visible">
+            Delete
+          </span>
         </button>
       </div>
     </div>

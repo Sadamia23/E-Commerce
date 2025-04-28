@@ -6,7 +6,7 @@ import { AdminService } from '../../core/services/admin.service';
 import { OrderParams } from '../../shared/models/orderParams';
 import { MatIcon } from '@angular/material/icon';
 import { MatLabel, MatSelectChange, MatSelectModule } from '@angular/material/select';
-import { CurrencyPipe, DatePipe } from '@angular/common';
+import { CurrencyPipe, DatePipe, NgClass } from '@angular/common';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink } from '@angular/router';
 import { MatTabsModule } from '@angular/material/tabs'
@@ -25,7 +25,8 @@ import { DialogService } from '../../core/services/dialog.service';
     MatLabel,
     MatTooltipModule,
     MatTabsModule,
-    RouterLink
+    RouterLink,
+    NgClass
   ],
   templateUrl: './admin.component.html',
   styleUrl: './admin.component.scss',

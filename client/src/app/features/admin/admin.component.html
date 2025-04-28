@@ -1,95 +1,158 @@
 <div class="min-h-screen">
-    <mat-tab-group class="bg-white">
-        <mat-tab label="Orders">
-            <div class="flex justify-between items-center mt-2 max-w-screen-2xl mx-auto">
-                <h2 class="text-2xl font-semibold">Customer orders</h2>
-                <mat-form-field appearance="outline" class="mt-2">
-                    <mat-label>Filter by status</mat-label>
-                    <mat-select (selectionChange)="onFilterSelect($event)">
-                        @for (status of statusOptions; track $index) {
-                            <mat-option [value]="status">{{status}}</mat-option>
-                        }
-                    </mat-select>
-                </mat-form-field>
-            </div>
+  <mat-tab-group class="bg-white">
+    <mat-tab label="Orders">
+      <div
+        class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 max-w-screen-2xl mx-auto"
+      >
+        <h2 class="text-xl sm:text-2xl font-semibold mb-4 sm:mb-0">
+          Customer orders
+        </h2>
+        <mat-form-field appearance="outline" class="w-full sm:w-auto">
+          <mat-label>Filter by status</mat-label>
+          <mat-select (selectionChange)="onFilterSelect($event)">
+            @for (status of statusOptions; track $index) {
+            <mat-option [value]="status">{{ status }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
 
-            <div class="p-4">
-                <div class="mat-elevation-z8">
-                    <table mat-table [dataSource]="dataSource" class="bg-white">
-                  
-                      <ng-container matColumnDef="id">
-                        <th mat-header-cell *matHeaderCellDef> No. </th>
-                        <td mat-cell *matCellDef="let order"> {{order.id}} </td>
-                      </ng-container>
-                  
-                      <ng-container matColumnDef="buyerEmail">
-                        <th mat-header-cell *matHeaderCellDef> Buyer email </th>
-                        <td mat-cell *matCellDef="let order"> {{order.buyerEmail}} </td>
-                      </ng-container>
-                  
-                      <ng-container matColumnDef="orderDate">
-                        <th mat-header-cell *matHeaderCellDef> Date </th>
-                        <td mat-cell *matCellDef="let order"> {{order.orderDate | date: 'short'}} </td>
-                      </ng-container>
-                  
-                      <ng-container matColumnDef="total">
-                        <th mat-header-cell *matHeaderCellDef> Total </th>
-                        <td mat-cell *matCellDef="let order"> {{order.total | currency}} </td>
-                      </ng-container>
+      <div class="p-4">
+        <div class="mat-elevation-z8">
+          <div class="w-full">
+            <table
+              mat-table
+              [dataSource]="dataSource"
+              class="bg-white w-full hidden md:table"
+            >
+              <ng-container matColumnDef="id">
+                <th mat-header-cell *matHeaderCellDef>No.</th>
+                <td mat-cell *matCellDef="let order">{{ order.id }}</td>
+              </ng-container>
 
-                      <ng-container matColumnDef="status">
-                        <th mat-header-cell *matHeaderCellDef> Status </th>
-                        <td mat-cell *matCellDef="let order"> {{order.status}} </td>
-                      </ng-container>
+              <ng-container matColumnDef="buyerEmail">
+                <th mat-header-cell *matHeaderCellDef>Buyer email</th>
+                <td mat-cell *matCellDef="let order">{{ order.buyerEmail }}</td>
+              </ng-container>
 
-                      <ng-container matColumnDef="action">
-                        <th mat-header-cell *matHeaderCellDef> Actions </th>
-                        <td mat-cell *matCellDef="let order">
-                            <div class="flex gap-2">
-                                <button matTooltip="View" 
-                                    mat-icon-button routerLink="/orders/{{order.id}}">
-                                    <mat-icon class="text-blue-500">visibility</mat-icon>
-                                </button>
-                                <button matTooltip="Refund" 
-                                    (click)="openConfirmDialog(order.id)"
-                                    [disabled]="order.status === 'Refunded'"
-                                    mat-icon-button>
-                                    <mat-icon class="text-red-700">undo</mat-icon>
-                                </button>
-                            </div>
-                            
-                        </td>
-                      </ng-container>
-                  
-                      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-                      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-                    </table>
-                  
-                    <mat-paginator 
-                        class="bg-white"
-                        [pageSizeOptions]="[5, 10, 20]"
-                        [length]="totalItems"
-                        [pageSize]="orderParams.pageSize"
-                        (page)="onPageChange($event)"
-                        showFirstLastButtons
+              <ng-container matColumnDef="orderDate">
+                <th mat-header-cell *matHeaderCellDef>Date</th>
+                <td mat-cell *matCellDef="let order">
+                  {{ order.orderDate | date : "short" }}
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="total">
+                <th mat-header-cell *matHeaderCellDef>Total</th>
+                <td mat-cell *matCellDef="let order">
+                  {{ order.total | currency }}
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <td mat-cell *matCellDef="let order">{{ order.status }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="action">
+                <th mat-header-cell *matHeaderCellDef>Actions</th>
+                <td mat-cell *matCellDef="let order">
+                  <div class="flex gap-2">
+                    <button
+                      matTooltip="View"
+                      mat-icon-button
+                      routerLink="/orders/{{ order.id }}"
                     >
-                    </mat-paginator>
+                      <mat-icon class="text-blue-500">visibility</mat-icon>
+                    </button>
+                    <button
+                      matTooltip="Refund"
+                      (click)="openConfirmDialog(order.id)"
+                      [disabled]="order.status === 'Refunded'"
+                      mat-icon-button
+                    >
+                      <mat-icon class="text-red-700">undo</mat-icon>
+                    </button>
                   </div>
-                  
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+            </table>
+
+            <div class="md:hidden">
+              @for (order of dataSource.data; track order.id) {
+              <div class="bg-white rounded shadow mb-4 p-3">
+                <div class="flex justify-between items-center mb-2">
+                  <span class="font-medium">Order #{{ order.id }}</span>
+                  <span
+                    class="text-sm px-2 py-1 rounded"
+                    [ngClass]="{
+                      'bg-green-100 text-green-800':
+                        order.status === 'PaymentReceived',
+                      'bg-blue-100 text-blue-800': order.status === 'Refunded',
+                      'bg-yellow-100 text-yellow-800':
+                        order.status === 'Pending',
+                      'bg-red-100 text-red-800':
+                        order.status === 'PaymentFailed',
+                      'bg-orange-100 text-orange-800':
+                        order.status === 'PaymentMismatch'
+                    }"
+                  >
+                    {{ order.status }}
+                  </span>
+                </div>
+
+                <div class="text-sm mb-1">
+                  <div class="grid grid-cols-2 gap-2">
+                    <div class="text-gray-600">Email:</div>
+                    <div>{{ order.buyerEmail }}</div>
+
+                    <div class="text-gray-600">Date:</div>
+                    <div>{{ order.orderDate | date : "short" }}</div>
+
+                    <div class="text-gray-600">Total:</div>
+                    <div class="font-medium">{{ order.total | currency }}</div>
+                  </div>
+                </div>
+
+                <div class="flex justify-end mt-3 gap-2">
+                  <button
+                    mat-stroked-button
+                    color="primary"
+                    routerLink="/orders/{{ order.id }}"
+                  >
+                    <mat-icon class="text-blue-500 mr-1">visibility</mat-icon>
+                  </button>
+                  <button
+                    mat-stroked-button
+                    color="warn"
+                    (click)="openConfirmDialog(order.id)"
+                    [disabled]="order.status === 'Refunded'"
+                  >
+                    <mat-icon class="text-red-700 mr-1">undo</mat-icon>
+                  </button>
+                </div>
+              </div>
+              }
             </div>
+          </div>
 
-        </mat-tab>
+          <mat-paginator
+            class="bg-white"
+            [pageSizeOptions]="[5, 10, 20]"
+            [length]="totalItems"
+            [pageSize]="orderParams.pageSize"
+            (page)="onPageChange($event)"
+            showFirstLastButtons
+          >
+          </mat-paginator>
+        </div>
+      </div>
+    </mat-tab>
 
-
-
-
-
-
-        <mat-tab label="Catalog">
-            Catalog placeholder
-        </mat-tab>
-        <mat-tab label="Customer service">
-            Customer service
-        </mat-tab>
-    </mat-tab-group>
+    <mat-tab label="Catalog"> Catalog placeholder </mat-tab>
+    <mat-tab label="Customer service"> Customer service </mat-tab>
+  </mat-tab-group>
 </div>

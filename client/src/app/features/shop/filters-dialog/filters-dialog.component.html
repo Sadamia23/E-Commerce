@@ -1,26 +1,42 @@
-<div>
-    <h3 class="text-3xl text-center pt-6 mb-3"> Filters</h3>
-    <mat-divider></mat-divider>
-    <div class="flex p-4">
-        <div class="w-1/2">
-            <h4 class="font-semibold text-xl text-primary">Brands</h4>
-            <mat-selection-list [(ngModel)]="selectedBrands" [multiple]="true">
-                @for (brand of shopService.brands; track $index) {
-                    <mat-list-option [value]="brand">{{brand}}</mat-list-option>
-                }
-            </mat-selection-list>
-        </div>
+<div class="container mx-auto px-4">
+  <h3 class="text-2xl sm:text-3xl text-center pt-4 sm:pt-6 mb-3">Filters</h3>
+  <mat-divider></mat-divider>
 
-        <div class="w-1/2">
-            <h4 class="font-semibold text-xl text-primary">Types</h4>
-            <mat-selection-list [(ngModel)]="selectedTypes" [multiple]="true">
-                @for (type of shopService.types; track $index) {
-                    <mat-list-option [value]="type">{{type}}</mat-list-option>
-                }
-            </mat-selection-list>
-        </div>
+  <div class="flex flex-col sm:flex-row p-2 sm:p-4">
+    <div class="w-full sm:w-1/2 mb-4 sm:mb-0 sm:pr-2">
+      <h4 class="font-semibold text-lg sm:text-xl text-primary mb-2">Brands</h4>
+      <mat-selection-list
+        [(ngModel)]="selectedBrands"
+        [multiple]="true"
+        class="max-h-64 sm:max-h-96 overflow-y-auto"
+      >
+        @for (brand of shopService.brands; track $index) {
+        <mat-list-option [value]="brand">{{ brand }}</mat-list-option>
+        }
+      </mat-selection-list>
     </div>
-    <div class="flex justify-end p-4">
-        <button mat-flat-button (click)="applyFilters()">Apply Filters</button>
+
+    <div class="w-full sm:w-1/2 sm:pl-2">
+      <h4 class="font-semibold text-lg sm:text-xl text-primary mb-2">Types</h4>
+      <mat-selection-list
+        [(ngModel)]="selectedTypes"
+        [multiple]="true"
+        class="max-h-64 sm:max-h-96 overflow-y-auto"
+      >
+        @for (type of shopService.types; track $index) {
+        <mat-list-option [value]="type">{{ type }}</mat-list-option>
+        }
+      </mat-selection-list>
     </div>
+  </div>
+
+  <div class="flex justify-center sm:justify-end p-2 pb-4 sm:p-4">
+    <button
+      mat-flat-button
+      (click)="applyFilters()"
+      class="w-full sm:w-auto px-6 py-2"
+    >
+      Apply Filters
+    </button>
+  </div>
 </div>

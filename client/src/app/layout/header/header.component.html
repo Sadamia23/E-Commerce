@@ -1,62 +1,81 @@
-<header
-  class="border-b shadow-md p-3 w-full max-h-20 fixed top-0 z-50 bg-white"
->
-  <div
-    class="flex align-middle items-center justify-between max-w-screen-2xl mx-auto"
-  >
-    <img
-      routerLink="/"
-      src="/images/logo.png"
-      alt="app logo"
-      class="max-h-16 cursor-pointer"
-    />
-    <nav class="flex gap-3 my-2 uppercase text-2xl">
-      <a
+<header class="border-b shadow-md p-3 w-full fixed top-0 z-50 bg-white transition-all duration-500 min-h-20" 
+        [ngClass]="{'max-h-max': mobileMenuOpen, 'max-h-20': !mobileMenuOpen || !isMobile}">
+  <div class="flex flex-col md:flex-row items-center justify-between max-w-screen-2xl mx-auto">
+    <div class="flex w-full md:w-auto justify-between items-center">
+      <img
         routerLink="/"
-        routerLinkActive="active"
-        [routerLinkActiveOptions]="{ exact: true }"
-        >Home</a
-      >
-      <a routerLink="/shop" routerLinkActive="active">Shop</a>
-      <a routerLink="/test-error" routerLinkActive="active">Errors</a>
-      <a *appIsAdmin routerLink="/admin" routerLinkActive="active">Admin</a>
-    </nav>
-    <div class="flex gap-3 align-middle">
-      <a
-        routerLink="/cart"
-        routerLinkActive="active"
-        matBadge="{{ cartService.itemCount() }}"
-        matBadgeSize="large"
-        class="custom-badge mt-2 mr-2"
-      >
-        <mat-icon>shopping_cart</mat-icon>
-      </a>
-      @if (accountService.currentUser()) {
-        <button mat-button [matMenuTriggerFor]="menu">
-          <mat-icon>arrow_drop_down</mat-icon>
-          <span>{{accountService.currentUser()?.email}}</span>
-        </button>
-      } @else {
-        <button routerLink="/account/login" mat-stroked-button>Login</button>
-        <button routerLink="/account/register" mat-stroked-button>Register</button>
-      }
+        src="/images/logo.png"
+        alt="app logo"
+        class="max-h-16 cursor-pointer"
+      />
+      <button 
+        mat-icon-button 
+        class="md:hidden"
+        (click)="mobileMenuOpen = !mobileMenuOpen"
+        aria-label="Toggle navigation menu">
+        <mat-icon>{{ mobileMenuOpen ? 'close' : 'menu' }}</mat-icon>
+      </button>
+    </div>
+
+    <div class="overflow-hidden transition-all duration-500 md:overflow-visible"
+         [ngClass]="{'max-h-0 invisible md:max-h-max md:visible': !mobileMenuOpen && isMobile, 
+                    'max-h-96 visible': mobileMenuOpen || !isMobile}">
+      <div class="flex flex-col w-full md:gap-20 md:flex md:flex-row md:items-center md:justify-between">
+        <nav class="flex flex-col md:flex-row gap-3 my-2 uppercase text-xl md:text-2xl md:mx-4">
+          <a
+            routerLink="/"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+            class="py-2 md:py-0 text-center"
+            (click)="mobileMenuOpen = false"
+            >Home</a
+          >
+          <a routerLink="/shop" routerLinkActive="active" class="py-2 md:py-0 text-center" (click)="mobileMenuOpen = false">Shop</a>
+          <a routerLink="/test-error" routerLinkActive="active" class="py-2 md:py-0 text-center" (click)="mobileMenuOpen = false">Errors</a>
+          <a *appIsAdmin routerLink="/admin" routerLinkActive="active" class="py-2 md:py-0 text-center" (click)="mobileMenuOpen = false">Admin</a>
+        </nav>
+
+        <div class="flex flex-col md:flex-row gap-3 items-center justify-center md:justify-end my-2 md:my-0">
+          <a
+            routerLink="/cart"
+            routerLinkActive="active"
+            (click)="mobileMenuOpen = false"
+            matBadge="{{ cartService.itemCount() }}"
+            matBadgeSize="large"
+            class="custom-badge mt-2 mr-2"
+          >
+            <mat-icon>shopping_cart</mat-icon>
+          </a>
+          @if (accountService.currentUser()) {
+            <button mat-button [matMenuTriggerFor]="menu" class="flex items-center">
+              <mat-icon class="text-purple-700">arrow_drop_down</mat-icon>
+              <span class="max-w-32 text-purple-700">{{accountService.currentUser()?.email}}</span>
+            </button>
+          } @else {
+            <div class="flex gap-2">
+              <button routerLink="/account/login" mat-stroked-button (click)="mobileMenuOpen = false">Login</button>
+              <button routerLink="/account/register" mat-stroked-button (click)="mobileMenuOpen = false">Register</button>
+            </div>
+          }
+        </div>
+      </div>
     </div>
   </div>
 </header>
 
 @if (busyService.loading) {
-<mat-progress-bar
+  <mat-progress-bar
   mode="indeterminate"
-  class="fixed top-20 z-50"
+  class="fixed z-50 top-20"
 ></mat-progress-bar>
 }
 
 <mat-menu #menu="matMenu" class="px-5">
-  <button mat-menu-item class="px-3" routerLink="/cart">
+  <button mat-menu-item class="px-3" routerLink="/cart" (click)="mobileMenuOpen = false">
     <mat-icon>shopping_cart</mat-icon>
     My cart
   </button>
-  <button mat-menu-item class="px-3" routerLink="/orders">
+  <button mat-menu-item class="px-3" routerLink="/orders" (click)="mobileMenuOpen = false">
     <mat-icon>history</mat-icon>
     My orders
   </button>
