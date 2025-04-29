@@ -19,6 +19,7 @@ export class StripeService {
   private elements?: StripeElements;
   private addressElement?: StripeAddressElement;
   private paymentElement?: StripePaymentElement;
+  private isInitializing = false; // Flag to prevent concurrent initializations
 
   constructor() {
     this.stripePromise = loadStripe(environment.stripePublicKey);
@@ -29,13 +30,33 @@ export class StripeService {
   }
 
   async initializeElements() {
+    // If already initializing, wait for it to complete
+    if (this.isInitializing) {
+      await new Promise(resolve => {
+        const checkInterval = setInterval(() => {
+          if (!this.isInitializing) {
+            clearInterval(checkInterval);
+            resolve(true);
+          }
+        }, 100);
+      });
+    }
+
     if (!this.elements) {
-      const stripe = await this.getStripeInstance();
-      if (stripe) {
-        const cart = await firstValueFrom(this.createOrUpdatePaymentIntent());
-        this.elements = stripe.elements({clientSecret: cart.clientSecret, appearance: {labels: 'floating'}});
-      } else {
-        throw new Error('Stripe has not been loaded');
+      try {
+        this.isInitializing = true;
+        const stripe = await this.getStripeInstance();
+        if (stripe) {
+          const cart = await firstValueFrom(this.createOrUpdatePaymentIntent());
+          if (!cart.clientSecret) {
+            throw new Error('No client secret returned from payment intent');
+          }
+          this.elements = stripe.elements({clientSecret: cart.clientSecret, appearance: {labels: 'floating'}});
+        } else {
+          throw new Error('Stripe has not been loaded');
+        }
+      } finally {
+        this.isInitializing = false;
       }
     }
     return this.elements;
@@ -45,7 +66,7 @@ export class StripeService {
     if (!this.paymentElement) {
       const elements = await this.initializeElements();
       if (elements) {
-        this.paymentElement= elements.create('payment');
+        this.paymentElement = elements.create('payment');
       } else {
         throw new Error('Element instance has not been initialized')
       }
@@ -90,8 +111,11 @@ export class StripeService {
   async createConfirmationToken() {
     const stripe = await this.getStripeInstance();
     const elements = await this.initializeElements();
+    if (!elements) throw new Error('Elements have not been initialized');
+    
     const result = await elements.submit();
     if (result.error) throw new Error(result.error.message);
+    
     if (stripe) {
       return await stripe.createConfirmationToken({elements});
     } else {
@@ -101,43 +125,66 @@ export class StripeService {
 
   async confirmPayment(confirmationToken: ConfirmationToken) {
     const stripe = await this.getStripeInstance();
+    if (!stripe) {
+      throw new Error('Stripe instance is not available');
+    }
+
     const elements = await this.initializeElements();
+    if (!elements) {
+      throw new Error('Elements have not been initialized');
+    }
+
     const result = await elements.submit();
     if (result.error) throw new Error(result.error.message);
 
-    const clientSecret = this.cartService.cart()?.clientSecret;
+    const cart = this.cartService.cart();
+    const clientSecret = cart?.clientSecret;
 
-    if (stripe && clientSecret) {
+    if (!clientSecret) {
+      // Try to refresh the client secret if not available
+      await firstValueFrom(this.createOrUpdatePaymentIntent());
+      const updatedCart = this.cartService.cart();
+      if (!updatedCart?.clientSecret) {
+        throw new Error('Client secret is not available');
+      }
+    }
+
+    // Get the latest client secret after potential refresh
+    const finalClientSecret = this.cartService.cart()?.clientSecret;
+    
+    if (stripe && finalClientSecret) {
       return await stripe.confirmPayment({
-        clientSecret: clientSecret,
+        clientSecret: finalClientSecret,
         confirmParams: {
           confirmation_token: confirmationToken.id
         },
         redirect: 'if_required'
-      })
+      });
     } else {
-      throw new Error('Unable to load stripe')
+      throw new Error('Unable to load stripe or obtain client secret');
     }
   }
 
   createOrUpdatePaymentIntent() {
     const cart = this.cartService.cart();
-    const hasClientSecret = !!cart?.clientSecret;
     if (!cart) throw new Error('Problem with cart');
+    
+    const hasClientSecret = !!cart?.clientSecret;
     return this.http.post<Cart>(this.baseUrl + 'payments/' + cart.id, {}).pipe(
       map(cart => {
-        if (!hasClientSecret) {
-          this.cartService.setCart(cart);
-        }
+        this.cartService.setCart(cart); // Always update the cart to ensure we have the latest client secret
         return cart;
       })
-    )
+    );
   }
 
   disposeElements() {  
-    this.elements = undefined;
-    this.addressElement = undefined;
-    this.paymentElement = undefined;
+    // Do not dispose elements if in the middle of a payment flow
+    // Only dispose if we're sure we're done with the checkout process
+    if (this.elements) {
+      this.elements = undefined;
+      this.addressElement = undefined;
+      this.paymentElement = undefined;
+    }
   }
-
 }

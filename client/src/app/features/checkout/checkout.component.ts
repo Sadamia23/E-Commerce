@@ -30,6 +30,7 @@ import { OrderService } from '../../core/services/order.service';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-checkout',
@@ -66,6 +67,8 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   confirmationToken?: ConfirmationToken;
   loading = false;
   isSmallScreen$: Observable<boolean>;
+  private paymentAttemptCount = 0;
+  private maxPaymentAttempts = 2; // Maximum number of payment attempts before showing an error
 
   constructor(private breakpointObserver: BreakpointObserver) {
     this.isSmallScreen$ = this.breakpointObserver
@@ -75,6 +78,9 @@ export class CheckoutComponent implements OnInit, OnDestroy {
 
   async ngOnInit() {
     try {
+      // First ensure we have an updated payment intent for the cart
+      await firstValueFrom(this.stripeService.createOrUpdatePaymentIntent());
+      
       this.addressElement = await this.stripeService.createAddressElement();
       this.addressElement.mount('#address-element');
       this.addressElement.on('change', this.handleAddressChange);
@@ -110,15 +116,14 @@ export class CheckoutComponent implements OnInit, OnDestroy {
 
   async getConfirmationToken() {
     try {
-      if (
-        Object.values(this.completionStatus()).every(
-          (status) => status === true
-        )
-      ) {
+      // Ensure all steps are completed
+      if (Object.values(this.completionStatus()).every(status => status === true)) {
+        // Ensure payment intent is up to date before creating confirmation token
+        await firstValueFrom(this.stripeService.createOrUpdatePaymentIntent());
+        
         const result = await this.stripeService.createConfirmationToken();
         if (result.error) throw new Error(result.error.message);
         this.confirmationToken = result.confirmationToken;
-        console.log(this.confirmationToken);
       }
     } catch (error: any) {
       this.snackbar.error(error.message);
@@ -129,7 +134,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     if (event.selectedIndex === 1) {
       if (this.saveAddress) {
         const address = (await this.getAddressFromStripeAddress()) as Address;
-        address && firstValueFrom(this.accountService.updateAddress(address));
+        address && await firstValueFrom(this.accountService.updateAddress(address));
       }
     }
     if (event.selectedIndex == 2) {
@@ -141,35 +146,68 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   }
 
   async confirmPayment(stepper: MatStepper) {
+    if (this.loading) return; // Prevent multiple concurrent clicks
+    
     this.loading = true;
+    this.paymentAttemptCount++;
+    
     try {
-      if (this.confirmationToken) {
-        const result = await this.stripeService.confirmPayment(
-          this.confirmationToken
-        );
-
-        if (result.paymentIntent?.status == 'succeeded') {
-          const order = await this.createOrderModel();
-          const orderResult = await firstValueFrom(
-            this.orderService.createOrder(order)
-          );
-          if (orderResult) {
-            this.orderService.orderComplete = true;
-            this.cartService.deleteCart();
-            this.cartService.selectedDelivery.set(null);
-            this.router.navigateByUrl('/checkout/success');
-          } else {
-            throw new Error('Order creation failed');
-          }
-        } else if (result.error) {
-          throw new Error(result.error.message);
-        } else {
-          throw new Error('Something went wrong');
+      if (!this.confirmationToken) {
+        // Attempt to recreate the confirmation token if it's missing
+        await this.getConfirmationToken();
+        if (!this.confirmationToken) {
+          throw new Error('Could not create payment confirmation token');
         }
       }
+
+      const result = await this.stripeService.confirmPayment(this.confirmationToken);
+
+      if (result.paymentIntent?.status === 'succeeded') {
+        const order = await this.createOrderModel();
+        const orderResult = await firstValueFrom(
+          this.orderService.createOrder(order)
+        );
+        if (orderResult) {
+          this.orderService.orderComplete = true;
+          this.cartService.deleteCart();
+          this.cartService.selectedDelivery.set(null);
+          this.router.navigateByUrl('/checkout/success');
+        } else {
+          throw new Error('Order creation failed');
+        }
+      } else if (result.error) {
+        throw new Error(result.error.message);
+      } else {
+        throw new Error('Something went wrong with the payment process');
+      }
     } catch (error: any) {
-      this.snackbar.error(error.message || 'Something went wrong');
-      stepper.previous();
+      const errorMessage = error.message || 'Something went wrong';
+      
+      // If we've already tried the maximum number of times, show error
+      if (this.paymentAttemptCount >= this.maxPaymentAttempts) {
+        this.snackbar.error(`${errorMessage} - Please refresh the page and try again.`);
+        stepper.previous();
+      } else {
+        // Otherwise, try to regenerate elements and retry
+        this.snackbar.error(`${errorMessage} - Retrying...`);
+        
+        // Reset and regenerate elements
+        this.stripeService.disposeElements();
+        this.confirmationToken = undefined;
+        
+        // Go back to payment step to recreate elements
+        stepper.previous();
+        
+        // Try to reinitialize stripe elements
+        try {
+          await firstValueFrom(this.stripeService.createOrUpdatePaymentIntent());
+          this.paymentElement = await this.stripeService.createPaymentElement();
+          this.paymentElement.mount('#payment-element');
+          this.paymentElement.on('change', this.handlePaymentChange);
+        } catch (initError: any) {
+          this.snackbar.error(`Failed to reinitialize payment: ${initError.message}`);
+        }
+      }
     } finally {
       this.loading = false;
     }
@@ -225,6 +263,9 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.stripeService.disposeElements();
+    // Only dispose elements if we're navigating away from checkout (not during payment process)
+    if (!this.loading) {
+      this.stripeService.disposeElements();
+    }
   }
 }
